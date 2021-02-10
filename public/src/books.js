@@ -1,36 +1,33 @@
 function findAuthorById(authors, id) {
-  let matchingAuthor = authors.filter(obj => obj['id'] === id);
-  return matchingAuthor[0];
+  return authors.find(authorObj => authorObj['id'] === id);
 }
 
 function findBookById(books, id) {
-  let matchingBook = books.filter(obj => obj['id'] === id);
-  return matchingBook[0];
+  return books.find(bookObj => bookObj['id'] === id);
 }
 
 function partitionBooksByBorrowedStatus(books) {
-  let checkedOut = books.filter(obj => {
-    let borrowsArr = obj['borrows'];
+  const checkedOut = books.filter(bookObj => {
+    const borrowsArr = bookObj['borrows'];
     // does not assume the solitary checked out entry is first in the array
     return borrowsArr.some(borrowObj => !borrowObj['returned']);
   });
-  let returned = books.filter(obj => {
-    let borrowsArr = obj['borrows'];
+  const returned = books.filter(bookObj => {
+    const borrowsArr = bookObj['borrows'];
     return borrowsArr.every(borrowObj => borrowObj['returned']);
   });
-  let arrPartition = [checkedOut, returned];
+  const arrPartition = [checkedOut, returned];
   return arrPartition;
 }
 
 function getBorrowersForBook(book, accounts) {
   let borrowsArr = book['borrows'];
   // let returned = borrowsArr['returned'];
-  let borrowersForThisBook = borrowsArr.map(obj => {
-    let thisBorrowerId = obj['id'];
-    let matchingAccountArr = accounts.filter(acct => acct['id'] ===
+  const borrowersForThisBook = borrowsArr.map(transaction => {
+    const thisBorrowerId = transaction['id'];
+    let matchingAccount = accounts.find(acct => acct['id'] ===
       thisBorrowerId);
-    let matchingAccount = matchingAccountArr[0];
-    matchingAccount['returned'] = obj['returned'];
+    matchingAccount['returned'] = transaction['returned'];
     return matchingAccount;
   });
   return borrowersForThisBook.slice(0, 10); // limit to first 10

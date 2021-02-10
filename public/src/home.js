@@ -7,21 +7,22 @@ function getTotalAccountsCount(accounts) {
 }
 
 function getBooksBorrowedCount(books) {
-  let hasCheckout = books.filter(obj => {
-    let borrowsArr = obj['borrows'];
+  const hasCheckout = books.filter(bookObj => {
+    const borrowsArr = bookObj['borrows'];
     return borrowsArr.some(transaction => !transaction['returned']);
   });
   return hasCheckout.length;
 }
 
-/*
-  @arr an array of objects with the format {key, count}; the "count" key must be
-  named as such
-*/
+/**
+ * 
+ * @param {array} arr contains objects with the format {key, count};
+ * the "count" key must be named as such
+ */
 function topFive(arr) {
   // reverse sort
   arr.sort((x, y) => x['count'] < y['count'] ? 1: -1);
-  let arrTopFive = arr.slice(0, 5);
+  const arrTopFive = arr.slice(0, 5);
   return arrTopFive;
 }
 
@@ -46,43 +47,59 @@ function getMostCommonGenres(books) {
 }
 
 function getMostPopularBooks(books) {
-  let borrowedCountByTitle = books.map(obj => {
-    let name = obj['title'];
-    let count = obj['borrows'].length;
+  const borrowedCountByTitle = books.map(bookObj => {
+    let name = bookObj['title'];
+    let count = bookObj['borrows'].length;
     return {name, count};
   });
   return topFive(borrowedCountByTitle);
 }
 
-function getMostPopularAuthors(books, authors) {
-  let borrowedCountWithAuthor = books.map(obj => {
-    let authorId = `${obj['authorId']}`;
-    let count = obj['borrows'].length;
+/**
+ * 
+ * @param {array} books Contains book objects ascribing to the format
+ * {id, title, genre, authorId, borrows}
+ * @param {array} authors Contains author objects ascribing to the format
+ * {id, picture, age, name, company, email, registered}
+ */
+function gatherAllAuthorBorrowCounts(books, authors)  {
+  // initial array pairing of {authorId, borrowed count} for each book
+  const borrowedCountWithAuthor = books.map(bookObj => {
+    let authorId = `${bookObj['authorId']}`;
+    let count = bookObj['borrows'].length;
     return {authorId, count};
   });
-  let countsObj = {};
+  // collate previous array into single "dictionary" / object
+  let collatedDict = {};
   for(let k = 0; k < borrowedCountWithAuthor.length; k++) {
-    let thisObj = borrowedCountWithAuthor[k];
-    let thisAuthorId = thisObj['authorId'];
-    if(Object.keys(countsObj).includes(thisAuthorId))
-      countsObj[thisAuthorId] += thisObj['count'];
+    const thisObj = borrowedCountWithAuthor[k];
+    const thisAuthorId = thisObj['authorId'];
+    if(Object.keys(collatedDict).includes(thisAuthorId))
+      collatedDict[thisAuthorId] += thisObj['count'];
     else
-      countsObj[thisAuthorId] = thisObj['count'];
+      collatedDict[thisAuthorId] = thisObj['count'];
   }
+  /* previous "dictionary" / object --> [{authorId, total borrowed counts
+    across all books}] */
   let countsArr = [];
-  for(let authorId in countsObj)
-    countsArr.push({authorId, count: countsObj[authorId]});
+  for(let authorId in collatedDict)
+    countsArr.push({authorId, count: collatedDict[authorId]});
+  return countsArr;
+}
 
-  let topFiveAuthorIds = topFive(countsArr);
-  let res = topFiveAuthorIds.map(obj => {
-    let thisAuthorId = parseInt(obj['authorId']);
-    let matchingAuthorArr = authors.filter(authorObj => authorObj['id'] ===
+function getMostPopularAuthors(books, authors) {
+  const allCounts = gatherAllAuthorBorrowCounts(books, authors);
+  let topFiveAuthorIds = topFive(allCounts);
+  // convert authorId to author's name for each object in prior array
+  const res = topFiveAuthorIds.map(metaSnippet => {
+    const thisAuthorId = parseInt(metaSnippet['authorId']);
+    const matchingAuthor = authors.find(authorObj => authorObj['id'] ===
       thisAuthorId);
-    if(matchingAuthorArr.length === 0)
-      return {};
-    let matchingAuthorObj = matchingAuthorArr[0];
-    let name = `${matchingAuthorObj['name']['first']} ${matchingAuthorObj['name']['last']}`;
-    let count = obj['count'];
+    // if(matchingAuthorArr === 0)
+    //   return {};
+    const authorNameComplete = matchingAuthor['name'];
+    const name = `${authorNameComplete['first']} ${authorNameComplete['last']}`;
+    const count = metaSnippet['count'];
     return {name, count};
   })
   return res;
